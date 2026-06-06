@@ -1,0 +1,33 @@
+---
+- name: Configure web server
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_port: 80
+    app_document_root: /var/www/html
+    app_server_name: infra-lab.local
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+  roles:
+    - webserver
+
+  post_tasks:
+    - name: Verify web server is responding
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}"
+        status_code: 200
+      register: health_check
+      retries: 3
+      delay: 5
+
+    - name: Print health check result
+      ansible.builtin.debug:
+        msg: "Web server is up - status {{ health_check.status }}"

@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:3.4
+    container_name: infra-lab-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=ec2,s3,iam,vpc
+      - DEFAULT_REGION=us-east-1
+      - DEBUG=0
+      - PERSISTENCE=0
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  target:
+    image: geerlingguy/docker-ubuntu2204-ansible
+    container_name: infra-lab-target
+    ports:
+      - "2222:22"
+      - "8080:80"
+    environment:
+      - container=docker
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    command: /lib/systemd/systemd
+    healthcheck:
+      test: ["CMD", "bash", "-c", "ss -tlnp | grep ':22'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  localstack-data:

@@ -1,0 +1,42 @@
+---
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Ensure nginx is enabled and started
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Deploy index page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ app_document_root }}/index.html"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Deploy nginx virtual host configuration
+  ansible.builtin.template:
+    src: vhost.conf.j2
+    dest: /etc/nginx/sites-available/{{ app_server_name }}.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable virtual host
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/{{ app_server_name }}.conf
+    dest: /etc/nginx/sites-enabled/{{ app_server_name }}.conf
+    state: link
+  notify: Reload nginx
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx

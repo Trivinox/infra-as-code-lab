@@ -1,0 +1,4 @@
+---
+app_port: 80
+app_document_root: /var/www/html
+app_server_name: infra-lab.local
